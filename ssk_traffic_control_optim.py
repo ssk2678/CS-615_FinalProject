@@ -31,25 +31,30 @@ def main():
         single_agent=True       
     )
 
-    obs, info = env.reset()
-    print("Success! Environment reset cleanly. Watch the GUI window!")
+    try:
+        obs, info = env.reset()
+        print("Success! Environment reset cleanly. Watch the GUI window!")
 
-    done = False
-    truncated = False
-    step = 0
-    
-    # This loop runs until the 3600 seconds of simulation time are completely up
-    while not (done or truncated):
-        action = env.action_space.sample()
-        obs, reward, done, truncated, info = env.step(action)
+        done = False
+        truncated = False
+        step = 0
         
-        step += 1
-        if step % 20 == 0:
-            print(f"Step {step} | Current Step Reward: {reward:.2f}")
+        # This loop runs until the 3600 seconds of simulation time are completely up
+        while not (done or truncated):
+            action = env.action_space.sample()
+            obs, reward, done, truncated, info = env.step(action)
+            
+            step += 1
+            if step % 20 == 0:
+                print(f"Step {step} | Current Step Reward: {reward:.2f}")
 
-    print("\nTraffic scenario finished!")
-    input("Press Enter in this terminal to exit...")
-    env.close()
+    except Exception as e:
+        print(f"\n[CRASH DETECTED] Script failed due to: {e}")
+
+    finally:
+        print("\nTraffic scenario finished!")
+        input("Press Enter in this terminal to exit...")
+        env.close()
 
     
     # # Run a quick 20-step visual loop test
