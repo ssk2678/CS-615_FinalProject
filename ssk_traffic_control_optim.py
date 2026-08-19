@@ -1,5 +1,6 @@
 import os
 import sys
+from sumo_rl import SumoEnvironment
 
 # KEEP THIS: Crucial for Linux virtual environment stability
 if 'SUMO_HOME' in os.environ:
@@ -9,7 +10,6 @@ if 'SUMO_HOME' in os.environ:
 else:
     sys.exit("Please declare the environment variable 'SUMO_HOME'")
 
-from sumo_rl import SumoEnvironment
 
 def main():
     base_dir = os.path.dirname(os.path.abspath(__file__))
