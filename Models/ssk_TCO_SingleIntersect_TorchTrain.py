@@ -84,9 +84,14 @@ class PyTorchAgent:
             self.epsilon *= self.epsilon_decay
 
 def main():
-    base_dir = os.path.dirname(os.path.abspath(__file__))
-    net_path = os.path.join(base_dir, "dataset", "nets", "single-intersection", "single-intersection.net.xml")   
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    base_dir = os.path.abspath(os.path.join(current_dir, ".."))
+        
+    net_path = os.path.join(base_dir, "dataset", "nets", "single-intersection", "single-intersection.net.xml")
     route_path = os.path.join(base_dir, "dataset", "nets", "single-intersection", "single-intersection.rou.xml")
+
+    model_save_path = "dqn_traffic_weights.pt"       
+    
 
     print("Initializing SUMO-RL Environment...")
     # FIXED: Restored 'num_seconds' and added 'max_depart_delay' to cleanly govern flow
@@ -105,7 +110,7 @@ def main():
     actionDim = env.action_spaces(sample_tl).n
 
     # CSV Logging Setup
-    log_file_path = os.path.join(base_dir, "training_rewards.csv")
+    log_file_path = "training_rewards.csv"
     with open(log_file_path, mode='w', newline='') as file:
         writer = csv.writer(file)
         writer.writerow(["Episode", "Total_Reward", "Final_Epsilon"])
@@ -155,8 +160,7 @@ def main():
                 writer = csv.writer(file)
                 writer.writerow([episode, episode_reward, agent.epsilon])
 
-            # Save model weights before environment teardown
-            model_save_path = os.path.join(base_dir, "dqn_traffic_weights.pt")
+            # Save model weights before environment teardown            
             torch.save(agent.policyNet.state_dict(), model_save_path)
             print(f"💾 Success! Best policy network weights saved to:\n➡ {model_save_path}")
 
