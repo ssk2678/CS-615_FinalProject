@@ -22,7 +22,7 @@ def main():
     
     net_path = os.path.join(base_dir, "dataset", "nets", "single-intersection", "single-intersection.net.xml")
     route_path = os.path.join(base_dir, "dataset", "nets", "single-intersection", "single-intersection.rou.xml")
-    weights_path = os.path.join(current_dir, "numpy_scratch_weights.npz") # Weights are inside Models/
+    weights_path = os.path.join(current_dir, "noTorch_scratch_weights.npz") # Weights are inside Models/
 
     # Protective file path assertions
     if not os.path.exists(weights_path):
@@ -33,7 +33,7 @@ def main():
     env = SumoEnvironment(
         net_file=net_path, 
         route_file=route_path, 
-        use_gui=False, 
+        use_gui=True, 
         num_seconds=3600, 
         max_depart_delay=1,
         delta_time=5, 
@@ -41,8 +41,8 @@ def main():
     )
     
     # 3. INTERFACE CONVERSION FIX: Functional mappings capture multi-agent shapes safely
-    sample_tl = env.ts_ids
-    state_dim = env.observation_spaces(sample_tl).shape
+    sample_tl = env.ts_ids[0]
+    state_dim = env.observation_spaces(sample_tl).shape[0]
     action_dim = env.action_spaces(sample_tl).n
 
     # 4. INSTANTIATE AND DE-SERIALIZE MATRICES

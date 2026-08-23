@@ -13,21 +13,25 @@ else:
     sys.exit("Please declare the environment variable 'SUMO_HOME'")
 
 def main():
-    base_dir = os.path.dirname(os.path.abspath(__file__))
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    base_dir = os.path.abspath(os.path.join(current_dir, ".."))
+    
     net_path = os.path.join(base_dir, "dataset", "nets", "single-intersection", "single-intersection.net.xml")
     route_path = os.path.join(base_dir, "dataset", "nets", "single-intersection", "single-intersection.rou.xml")
 
     print("Initializing Layered Object NumPy Environment...")
     env = SumoEnvironment(
-        net_file=net_path, route_file=route_path, use_gui=False, 
+        net_file=net_path, route_file=route_path, use_gui=True, 
         num_seconds=3600, max_depart_delay=1, delta_time=5, single_agent=False
     )
     
-    sample_tl = env.ts_ids
-    state_dim = env.observation_spaces(sample_tl).shape
+    
+    sample_tl = env.ts_ids[0]    
+    
+    state_dim = env.observation_spaces(sample_tl).shape[0]
     action_dim = env.action_spaces(sample_tl).n
     
-    log_file_path = os.path.join(base_dir, "numpy_training_rewards.csv")
+    log_file_path = "noTorch_training_rewards.csv"
     with open(log_file_path, mode='w', newline='') as file:
         writer = csv.writer(file)
         writer.writerow(["Episode", "Total_Reward", "Final_Epsilon"])
@@ -72,7 +76,7 @@ def main():
                 writer.writerow([episode, episode_reward, agent.epsilon])
 
             # Export weights updated to fit the layered properties object structures
-            weight_save_path = os.path.join(base_dir, "numpy_scratch_weights.npz")
+            weight_save_path = "noTorch_scratch_weights.npz"
             np.savez(weight_save_path, 
                      W1=agent.policy_net.layer1.W, b1=agent.policy_net.layer1.b, 
                      W2=agent.policy_net.layer2.W, b2=agent.policy_net.layer2.b)
