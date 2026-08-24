@@ -36,7 +36,7 @@ def main():
     weights_path = "dqn_traffic_weights.pt"
 
     if not os.path.exists(weights_path):
-        sys.exit(f"Missing weights file at {weights_path}! Please run your training script first.")
+        sys.exit(f"Missing weights file at {weights_path}! Please run the training script first.")
 
     print("Initializing Visual SUMO GUI Environment...")
     # NOTE: use_gui=True enables the native SUMO visual interface window

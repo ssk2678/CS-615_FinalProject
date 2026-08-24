@@ -3,7 +3,7 @@ import sys
 import numpy as np
 from sumo_rl import SumoEnvironment
 
-# Clean local module imports from your new layer library layout
+# Clean local module imports from the layer library layout
 from DeepQNetwork import DQN
 
 # KEEP THIS: Crucial for Linux virtual environment stability
@@ -26,7 +26,7 @@ def main():
 
     # Protective file path assertions
     if not os.path.exists(weights_path):
-        sys.exit(f"❌ Error: Missing trained matrix arrays at {weights_path}.\nRun your main NumPy training pipeline first!")
+        sys.exit(f"❌ Error: Missing trained matrix arrays at {weights_path}.\nRun the main NumPy training pipeline first!")
 
     print("Initializing Multi-Agent Evaluation Environment...")
     # 2. HEADLESS PROTECTION: use_gui=False stabilizes the TraCI process inside WSL

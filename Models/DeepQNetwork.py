@@ -3,7 +3,7 @@ from ReLU import ReLU
 
 class DQN:
     def __init__(self, state_dim, action_dim, lr=0.001):
-        # Construct pipeline layers exactly matching your PyTorch configuration
+        # Construct pipeline layers 
         self.layer1 = Linear(state_dim, 64, lr)
         self.act1 = ReLU()
         self.layer2 = Linear(64, action_dim, lr)
