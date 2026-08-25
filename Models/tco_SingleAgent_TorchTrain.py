@@ -24,9 +24,7 @@ class DQNetwork(nn.Module):
         super(DQNetwork, self).__init__()
         self.fullyConnected = nn.Sequential(
             nn.Linear(stateDim, 64),
-            nn.ReLU(),
-            nn.Linear(64, 64),
-            nn.ReLU(),
+            nn.ReLU(),            
             nn.Linear(64, actionDim)
         )
     def forward(self, x):
@@ -87,8 +85,8 @@ def main():
     current_dir = os.path.dirname(os.path.abspath(__file__))
     base_dir = os.path.abspath(os.path.join(current_dir, ".."))
         
-    net_path = os.path.join(base_dir, "dataset", "nets", "single-intersection", "single-intersection.net.xml")
-    route_path = os.path.join(base_dir, "dataset", "nets", "single-intersection", "single-intersection.rou.xml")
+    net_path = os.path.join(base_dir, "dataset", "nets", "2way-single-intersection", "single-intersection.net.xml")
+    route_path = os.path.join(base_dir, "dataset", "nets", "2way-single-intersection", "single-intersection-gen.rou.xml")
 
     model_save_path = "dqn_traffic_weights.pt"       
     
