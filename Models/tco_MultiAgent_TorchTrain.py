@@ -30,7 +30,7 @@ else:
     sys.exit("Please declare the environment variable 'SUMO_HOME'")
 
 
-# Model Def (Perfectly matches your 2-layer custom framework architecture)
+# Model Def (Perfectly matches 2-layer custom framework architecture)
 class DQNetwork(nn.Module):
     def __init__(self, stateDim, actionDim):
         super(DQNetwork, self).__init__()
