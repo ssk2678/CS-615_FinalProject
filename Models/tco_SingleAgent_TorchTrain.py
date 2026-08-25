@@ -86,7 +86,7 @@ def main():
     base_dir = os.path.abspath(os.path.join(current_dir, ".."))
         
     net_path = os.path.join(base_dir, "dataset", "nets", "2way-single-intersection", "single-intersection.net.xml")
-    route_path = os.path.join(base_dir, "dataset", "nets", "2way-single-intersection", "single-intersection-gen.rou.xml")
+    route_path = os.path.join(base_dir, "dataset", "nets", "2way-single-intersection", "single-intersection-vhvh.rou.xml")
 
     model_save_path = "dqn_traffic_weights.pt"       
     

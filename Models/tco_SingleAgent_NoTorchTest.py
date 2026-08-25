@@ -21,7 +21,7 @@ def main():
     base_dir = os.path.abspath(os.path.join(current_dir, ".."))
     
     net_path = os.path.join(base_dir, "dataset", "nets", "2way-single-intersection", "single-intersection.net.xml")
-    route_path = os.path.join(base_dir, "dataset", "nets", "2way-single-intersection", "single-intersection-gen.rou.xml")
+    route_path = os.path.join(base_dir, "dataset", "nets", "2way-single-intersection", "single-intersection-vhvh.rou.xml")
     weights_path = os.path.join(current_dir, "noTorch_scratch_weights.npz") # Weights are inside Models/
 
     # Protective file path assertions
