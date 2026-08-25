@@ -129,6 +129,7 @@ def main():
             while not done:
                 actionDict = {tl_id: agent.selectAction(obs) for tl_id, obs in obsDict.items()}            
                 nextObsDict, rewardDict, terminatedDict, infoDict = env.step(actionDict)
+                step_count += 1
 
                 episode_reward += sum(rewardDict.values())
                 
@@ -142,7 +143,7 @@ def main():
                 # FIXED: Check natural termination OR force stop when internal clock ticks past limit
                 done = all(terminatedDict.values()) or (env.sim_step >= 3600)
                 
-                step_count += 1
+                
                 
                 if step_count % 100 == 0:
                     agent.targetNet.load_state_dict(agent.policyNet.state_dict())

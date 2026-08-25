@@ -51,6 +51,8 @@ def main():
             while not done:
                 action_dict = {tl_id: agent.select_action(obs) for tl_id, obs in obs_dict.items()}
                 next_obs_dict, reward_dict, terminated_dict, info_dict = env.step(action_dict)
+                step_count += 1
+
                 episode_reward += sum(reward_dict.values())
                 
                 for tl_id in obs_dict.keys():
@@ -60,7 +62,7 @@ def main():
                 agent.train_step(32)
                 obs_dict = next_obs_dict
                 done = all(terminated_dict.values()) or (env.sim_step >= 3600)
-                step_count += 1
+                
                 
                 if step_count % 100 == 0:
                     agent.target_net.copy_weights_from(agent.policy_net)
