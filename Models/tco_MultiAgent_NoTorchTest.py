@@ -1,9 +1,8 @@
 import os
 import sys
 import numpy as np
-
 # =====================================================================
-# 🔥 CRITICAL BUGFIX: Resolve the PettingZoo agent_selector module conflict
+# 🔥 Resolve the PettingZoo agent_selector module conflict
 # =====================================================================
 try:
     import pettingzoo.utils.agent_selector as az_mod
@@ -15,7 +14,7 @@ except ImportError:
     pass
 # =====================================================================  
 
-import sumo_rl  # FIXED: Required for parallel_env multi-agent execution wrapper
+import sumo_rl  # Required for parallel_env multi-agent execution wrapper
 
 # Clean local module imports from the layer library layout
 from DeepQNetwork import DQN
@@ -36,7 +35,7 @@ def main():
     net_path = os.path.join(base_dir, "dataset", "nets", "3x3grid", "3x3Grid2lanes.net.xml")
     route_path = os.path.join(base_dir, "dataset", "nets", "3x3grid", "routes14000.rou.xml")
     
-    # FIXED: Direct targeting to the correct multi-agent 2x2/3x3 weights archive
+    # Direct targeting to the correct multi-agent 2x2/3x3 weights archive
     weights_path = os.path.join(current_dir, "noTorch_marl_3x3_scratch_weights.npz")
 
     # Protective file path assertions
@@ -44,7 +43,6 @@ def main():
         sys.exit(f"❌ Error: Missing trained multi-agent matrix arrays at {weights_path}.\nRun the main NumPy MARL training pipeline first!")
 
     print("Initializing Multi-Agent Evaluation Environment...")
-    # FIXED: Swapped out SumoEnvironment for parallel_env wrapper interface
     env = sumo_rl.parallel_env(
         net_file=net_path, 
         route_file=route_path, 
@@ -60,10 +58,12 @@ def main():
     print("Loading raw NumPy parameter block weights...")
     loaded_data = np.load(weights_path)
     
-    # FIXED: DYNAMIC MAPPING - Reconstruct independent networks for each individual intersection
+    # DYNAMIC MAPPING: Reconstruct independent networks for each individual intersection
     policy_networks = {}
     for tl_id in env.possible_agents:
-        state_dim = env.observation_space(tl_id).shape[0]
+        # Peel off the first index scalar to pass an integer rather than a tuple object
+        shape_val = env.observation_space(tl_id).shape
+        state_dim = shape_val[0] if isinstance(shape_val, tuple) else shape_val
         action_dim = env.action_space(tl_id).n
         
         # Instantiate 2-layer network framework for this specific junction node
@@ -89,20 +89,19 @@ def main():
         while not done:
             action_dict = {}
             for tl_id, obs in obs_dict.items():
-                # FIXED: Consult the SPECIFIC network dictionary entry mapped to this active traffic light key
+                # Consult the SPECIFIC network dictionary entry mapped to this active traffic light key
                 active_net = policy_networks[tl_id]
                 q_values = active_net.forward(obs.reshape(1, -1))
                 action_dict[tl_id] = np.argmax(q_values)
             
-            # FIXED: Step execution now returns 5 dictionary objects
+            # Step execution returns 5 dictionary objects
             next_obs_dict, reward_dict, terminated_dict, truncated_dict, info_dict = env.step(action_dict)
             
             total_test_reward += sum(reward_dict.values())
             obs_dict = next_obs_dict
             step_count += 1
             
-            # FIXED: Bypasses library version wrapper bugs entirely using step calculations
-            # 720 steps * 5 seconds (delta_time) = 3600 total simulation seconds
+            # Synchronized termination statement tracking snake_case variables perfectly
             done = all(terminated_dict.values()) or all(truncated_dict.values()) or (step_count * 5 >= 3600)
             
             if step_count % 100 == 0:
@@ -114,7 +113,7 @@ def main():
     except Exception as e:
         print(f"\n[TEST MATRIX CRASHED] Stopped mid-execution window due to: {e}")
     finally:
-        if 'env' in locals():
+        if 'env' in locals() and hasattr(env, 'close'):
             env.close()      
 
 if __name__ == "__main__":

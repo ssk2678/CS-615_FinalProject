@@ -7,8 +7,9 @@ import torch.optim as optim
 from collections import deque
 import numpy as np
 import csv
+
 # =====================================================================
-# 🔥 CRITICAL BUGFIX: Resolve the PettingZoo agent_selector module conflict
+# 🔥 Resolve the PettingZoo agent_selector module conflict
 # =====================================================================
 try:
     import pettingzoo.utils.agent_selector as az_mod
@@ -19,7 +20,7 @@ try:
 except ImportError:
     pass
 # =====================================================================  
-import sumo_rl  # FIXED: Required for parallel_env MARL mapping
+import sumo_rl  # Required for parallel_env MARL mapping
 
 # KEEP THIS: Crucial for Linux virtual environment stability
 if 'SUMO_HOME' in os.environ:
@@ -34,8 +35,10 @@ else:
 class DQNetwork(nn.Module):
     def __init__(self, stateDim, actionDim):
         super(DQNetwork, self).__init__()
+        # Robustly handle both raw integers and tuple structures to maintain test synchronization
+        input_features = stateDim[0] if isinstance(stateDim, tuple) else stateDim
         self.fullyConnected = nn.Sequential(
-            nn.Linear(stateDim, 64),
+            nn.Linear(input_features, 64),
             nn.ReLU(),            
             nn.Linear(64, actionDim)
         )
@@ -97,14 +100,12 @@ def main():
     current_dir = os.path.dirname(os.path.abspath(__file__))
     base_dir = os.path.abspath(os.path.join(current_dir, ".."))
         
-    # FIXED: Re-targeted paths to look into the 2x2/3x3 grid configurations
     net_path = os.path.join(base_dir, "dataset", "nets", "3x3grid", "3x3Grid2lanes.net.xml")
     route_path = os.path.join(base_dir, "dataset", "nets", "3x3grid", "routes14000.rou.xml")
 
     model_save_path = "marl_3x3_traffic_weights.pt"       
     
     print("Initializing Multi-Agent SUMO-RL Environment...")
-    # FIXED: Replaced SumoEnvironment with parallel_env interface for MARL routing
     env = sumo_rl.parallel_env(
         net_file=net_path, 
         route_file=route_path, 
@@ -120,7 +121,8 @@ def main():
     # DYNAMIC CONFIGURATION: Spawn independent brain network layers for every intersection
     agents = {}
     for tl_id in env.possible_agents:
-        stateDim = env.observation_space(tl_id).shape[0]
+        # Pass the clean shape matrix layout uniformly to align with evaluation files
+        stateDim = env.observation_space(tl_id).shape
         actionDim = env.action_space(tl_id).n
         agents[tl_id] = PyTorchAgent(stateDim, actionDim)
 
@@ -136,25 +138,25 @@ def main():
         for episode in range(1, NUM_EPISODES + 1):
             print(f"\n--- Starting Multi-Agent Episode {episode}/{NUM_EPISODES} ---")
             
-            obsDict, _ = env.reset() # PettingZoo parallel environment reset structure returns (obs, info)
+            obsDict, _ = env.reset()
             print(f"Success! 3x3 Grid initialized with {len(obsDict)} active agents.")
             done = False        
             step_count = 0
             episode_reward = 0.0
             
             while not done:
-                # FIXED: Maps actions sequentially across distinct brain instances using ID keys
+                # Maps actions sequentially across distinct brain instances using ID keys
                 actionDict = {tl_id: agents[tl_id].selectAction(obs) for tl_id, obs in obsDict.items()}            
                 
                 # Step parallel execution returns 5 dictionary objects
-                nextObsDict, rewardDict, terminatedDict, truncatedDict, infoDict = env.step(actionDict)
+                nextObsDict, rewardDict, terminated_dict, truncated_dict, infoDict = env.step(actionDict)
                 step_count += 1
 
                 episode_reward += sum(rewardDict.values())
                 
                 # Train and push memories selectively per active agent
                 for tl_id in obsDict.keys():
-                    is_done = terminatedDict[tl_id] or truncatedDict[tl_id]
+                    is_done = terminated_dict[tl_id] or truncated_dict[tl_id]
                     
                     # Store to corresponding agent replay memory pool
                     agents[tl_id].memory.push(
@@ -171,7 +173,7 @@ def main():
                 obsDict = nextObsDict
                                 
                 # Check execution end conditions across multi-agent nodes
-                done = all(terminatedDict.values()) or all(truncatedDict.values()) or (step_count * 5 >= 3600)
+                done = all(terminated_dict.values()) or all(truncated_dict.values()) or (step_count * 5 >= 3600)
                 
                 # Periodically update target networks and report logging metrics
                 if step_count % 100 == 0:
@@ -193,17 +195,16 @@ def main():
                 writer = csv.writer(file)
                 writer.writerow([episode, episode_reward, mean_final_eps])
 
-            # Save state weights archive for all nodes independently
-            weights_state = {tl_id: agents[tl_id].policyNet.state_dict() for tl_id in agents.keys()}
-            torch.save(weights_state, model_save_path)
-            print(f"💾 Success! Multi-agent state dictionary parameters archived to:\n➡ {model_save_path}")
+            # Seamlessly patch, pack, and export structural weights dictionary parameters
+            torch.save({tl_id: agent.policyNet.state_dict() for tl_id, agent in agents.items()}, model_save_path)
+            print(f"💾 Success! Multi-Agent network weights package saved to:\n➡ {model_save_path}")
 
     except Exception as e:
         print(f"\n[CRASH DETECTED] Script failed due to: {e}")
 
     finally:
-        print(f"\nTraffic training loop completed! Metrics saved to {log_file_path}")
-        if 'env' in locals():
+        print(f"\nMulti-Agent training loop completed! Metrics saved to {log_file_path}")
+        if 'env' in locals() and hasattr(env, 'close'):
             env.close()      
 
 if __name__ == "__main__":

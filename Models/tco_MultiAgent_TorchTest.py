@@ -4,7 +4,7 @@ import torch
 import torch.nn as nn
 import numpy as np
 # =====================================================================
-# 🔥 CRITICAL BUGFIX: Resolve the PettingZoo agent_selector module conflict
+# 🔥 Resolve the PettingZoo agent_selector module conflict
 # =====================================================================
 try:
     import pettingzoo.utils.agent_selector as az_mod
@@ -15,7 +15,7 @@ try:
 except ImportError:
     pass
 # =====================================================================  
-import sumo_rl  # FIXED: Required for parallel_env multi-agent execution wrapper
+import sumo_rl  # Required for parallel_env multi-agent execution wrapper
 
 # KEEP THIS: Crucial for Linux virtual environment stability
 if 'SUMO_HOME' in os.environ:
@@ -29,8 +29,14 @@ else:
 class DQNetwork(nn.Module):
     def __init__(self, stateDim, actionDim):
         super(DQNetwork, self).__init__()
+        # Extract the raw integer out of the tuple safely to prevent nn.Linear failures
+        if isinstance(stateDim, tuple):
+            input_features = stateDim[0]
+        else:
+            input_features = stateDim
+            
         self.fullyConnected = nn.Sequential(
-            nn.Linear(stateDim, 64),
+            nn.Linear(input_features, 64),
             nn.ReLU(),           
             nn.Linear(64, actionDim)
         )
@@ -41,7 +47,7 @@ def main():
     current_dir = os.path.dirname(os.path.abspath(__file__))
     base_dir = os.path.abspath(os.path.join(current_dir, ".."))    
     
-    # FIXED: Re-targeted network paths to look into the 2x2/3x3 grid configurations
+    # Re-targeted network paths to look into the 2x2/3x3 grid configurations
     net_path = os.path.join(base_dir, "dataset", "nets", "3x3grid", "3x3Grid2lanes.net.xml")
     route_path = os.path.join(base_dir, "dataset", "nets", "3x3grid", "routes14000.rou.xml")
 
@@ -51,7 +57,6 @@ def main():
         sys.exit(f"Missing weights file at {weights_path}! Please run the training script first.")
 
     print("Initializing Visual Multi-Agent SUMO GUI Environment...")
-    # FIXED: Swapped to parallel_env interface to support multi-intersection grids
     env = sumo_rl.parallel_env(
         net_file=net_path, 
         route_file=route_path, 
@@ -64,13 +69,14 @@ def main():
     # Trigger a baseline environment initialization step to pull topology dimensions
     env.reset()
 
-    # FIXED: Load the archived multi-agent weights dictionary
+    # Load the archived multi-agent weights dictionary
     saved_weights_dict = torch.load(weights_path, map_location=torch.device('cpu'))
     
     # DYNAMIC MAPPING: Build an independent network instance for each unique traffic light node
     policy_networks = {}
     for tl_id in env.possible_agents:
-        stateDim = env.observation_space(tl_id).shape[0]
+        # Pulled shape attribute cleanly via robust dimension extraction to bypass version conflicts
+        stateDim = env.observation_space(tl_id).shape
         actionDim = env.action_space(tl_id).n
         
         # Instantiate 2-layer network framework for this specific junction node
@@ -95,7 +101,7 @@ def main():
             for tl_id, obs in obsDict.items():
                 state_t = torch.FloatTensor(obs).unsqueeze(0)
                 with torch.no_grad():
-                    # FIXED: Consult the SPECIFIC network mapped to this active traffic light key
+                    # Consult the SPECIFIC network mapped to this active traffic light key
                     active_net = policy_networks[tl_id]
                     actionDict[tl_id] = torch.argmax(active_net(state_t)).item()
             
@@ -104,10 +110,9 @@ def main():
             
             total_eval_reward += sum(rewardDict.values())
             obsDict = nextObsDict
-            step_count += 1  # ◄— ADD THIS TO TRACK SIMULATION STEPS
+            step_count += 1  
             
-            # FIXED: Bypasses library version wrapper bugs entirely using step calculations
-            # 720 steps * 5 seconds (delta_time) = 3600 total seconds
+            # Bypasses library version wrapper bugs entirely using step calculations
             done = all(terminatedDict.values()) or all(truncatedDict.values()) or (step_count * 5 >= 3600)
             
         print(f"\n✔ Visual MARL evaluation finished cleanly! Total Evaluation Grid Reward: {total_eval_reward:.2f}")
@@ -115,7 +120,8 @@ def main():
     except Exception as e:
         print(f"\n[EVALUATION INTERRUPTED] Loop stopped due to: {e}")
     finally:
-        env.close()      
+        if 'env' in locals() and hasattr(env, 'close'):
+            env.close()      
 
 if __name__ == "__main__":
     main()

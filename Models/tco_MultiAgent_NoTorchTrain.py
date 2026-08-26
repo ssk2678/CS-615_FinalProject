@@ -3,7 +3,7 @@ import sys
 import csv
 import numpy as np
 # =====================================================================
-# 🔥 CRITICAL BUGFIX: Resolve the PettingZoo agent_selector module conflict
+# 🔥 Resolve the PettingZoo agent_selector module conflict
 # =====================================================================
 try:
     import pettingzoo.utils.agent_selector as az_mod
@@ -14,7 +14,7 @@ except ImportError:
     pass
 # =====================================================================
 
-import sumo_rl  # FIXED: Required for parallel_env multi-agent processing
+import sumo_rl  # Required for parallel_env multi-agent processing
 from DeepQNAgent import Agent
 
 if 'SUMO_HOME' in os.environ:
@@ -28,12 +28,11 @@ def main():
     current_dir = os.path.dirname(os.path.abspath(__file__))
     base_dir = os.path.abspath(os.path.join(current_dir, ".."))
     
-    # FIXED: Re-targeted network paths to look into the 2x2/3x3 grid configurations
+    # Re-targeted network paths to look into the 2x2/3x3 grid configurations
     net_path = os.path.join(base_dir, "dataset", "nets", "3x3grid", "3x3Grid2lanes.net.xml")
     route_path = os.path.join(base_dir, "dataset", "nets", "3x3grid", "routes14000.rou.xml")
 
     print("Initializing Layered Multi-Agent NumPy Environment...")
-    # FIXED: Replaced SumoEnvironment with parallel_env interface for MARL routing
     env = sumo_rl.parallel_env(
         net_file=net_path, 
         route_file=route_path, 
@@ -49,7 +48,9 @@ def main():
     # DYNAMIC CONFIGURATION: Spawn independent scratch frameworks for each intersection node
     agents = {}
     for tl_id in env.possible_agents:
-        state_dim = env.observation_space(tl_id).shape[0]
+        # Peel off the first index scalar to pass an integer rather than a tuple object
+        shape_val = env.observation_space(tl_id).shape
+        state_dim = shape_val[0] if isinstance(shape_val, tuple) else shape_val
         action_dim = env.action_space(tl_id).n
         agents[tl_id] = Agent(state_dim, action_dim)
     
@@ -71,7 +72,7 @@ def main():
             episode_reward = 0.0
             
             while not done:
-                # FIXED: Maps action evaluations sequentially across distinct brain memory records
+                # Maps action evaluations sequentially across distinct brain memory records
                 action_dict = {tl_id: agents[tl_id].select_action(obs) for tl_id, obs in obs_dict.items()}
                 
                 # Step execution returns 5 dictionary objects
@@ -98,7 +99,7 @@ def main():
                     
                 obs_dict = next_obs_dict                
                 
-                # FIXED: Verifies step clock mathematically, bypassing internal wrapper bugs completely
+                # Restored strict snake_case dictionary references for termination tracking
                 done = all(terminated_dict.values()) or all(truncated_dict.values()) or (step_count * 5 >= 3600)
                 
                 # Periodically sync parameters and print live metric feedback indicators
@@ -122,7 +123,7 @@ def main():
                 writer = csv.writer(file)
                 writer.writerow([episode, episode_reward, mean_final_eps])
 
-            # FIXED: Archive all 4 distinct sets of weights under tagged index headers to prevent overwriting
+            # Archive all 4 distinct sets of weights under tagged index headers to prevent overwriting
             weight_save_path = "noTorch_marl_3x3_scratch_weights.npz"
             archive_data = {}
             for tl_id, agent_node in agents.items():
@@ -138,7 +139,7 @@ def main():
         print(f"\n[CRASH DETECTED] Script failed due to: {e}")
     finally:
         print(f"\nLayered NumPy training complete. Logs saved to {log_file_path}")
-        if 'env' in locals():
+        if 'env' in locals() and hasattr(env, 'close'):
             env.close()
 
 if __name__ == "__main__":
