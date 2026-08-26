@@ -11,12 +11,15 @@ class Agent:
         self.target_net.copy_weights_from(self.policy_net)
         
         self.memory = ReplayBuffer(10000)
-        self.gamma, self.epsilon, self.epsilon_min, self.epsilon_decay = 0.99, 1.0, 0.05, 0.995
+        # Optimized 2-episode training loop constants
+        self.gamma, self.epsilon, self.epsilon_min, self.epsilon_decay = 0.99, 1.0, 0.05, 0.998
 
     def select_action(self, state):
         if random.random() < self.epsilon: 
             return random.randint(0, self.action_dim - 1)
-        q_values = self.policy_net.forward(state.reshape(1, -1))
+        
+        # Reshape into a 2D batch array, then flatten the output to guarantee a 1D scalar index
+        q_values = self.policy_net.forward(state.reshape(1, -1)).flatten()
         return np.argmax(q_values)
 
     def train_step(self, batch_size):
@@ -36,6 +39,7 @@ class Agent:
         # 3. Initialize loss gradient at the final layer output
         d_out = np.zeros_like(current_q_values)
         for i in range(batch_size):
+            # Batch_size division to perfectly balance with Linear.py's Adam updates
             d_out[i, actions[i]] = (current_q_values[i, actions[i]] - targets[i]) / batch_size
             
         # 4. Fire backward pass sequence (Gradients auto-cascade and parameters self-update)

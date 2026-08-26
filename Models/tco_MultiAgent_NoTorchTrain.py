@@ -60,7 +60,7 @@ def main():
         writer = csv.writer(file)
         writer.writerow(["Episode", "Total_Reward", "Mean_Epsilon"])
 
-    NUM_EPISODES = 5
+    NUM_EPISODES = 3
 
     try:
         for episode in range(1, NUM_EPISODES + 1):

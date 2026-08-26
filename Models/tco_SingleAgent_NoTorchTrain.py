@@ -34,7 +34,7 @@ def main():
         writer = csv.writer(file)
         writer.writerow(["Episode", "Total_Reward", "Final_Epsilon"])
 
-    NUM_EPISODES = 5
+    NUM_EPISODES = 3
     agent = Agent(state_dim, action_dim)
 
     try:

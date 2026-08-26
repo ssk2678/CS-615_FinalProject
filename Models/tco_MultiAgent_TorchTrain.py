@@ -69,7 +69,7 @@ class PyTorchAgent:
         
         self.optimizer = optim.Adam(self.policyNet.parameters(), lr=1e-3)
         self.memory = PyTorchReplayBuffer(10000)
-        self.gamma, self.epsilon, self.epsilon_min, self.epsilon_decay = 0.99, 1.0, 0.05, 0.995
+        self.gamma, self.epsilon, self.epsilon_min, self.epsilon_decay = 0.99, 1.0, 0.05, 0.998
 
     def selectAction(self, state):
         if random.random() < self.epsilon:
@@ -132,7 +132,7 @@ def main():
         writer = csv.writer(file)
         writer.writerow(["Episode", "Total_Reward", "Mean_Epsilon"])
 
-    NUM_EPISODES = 5
+    NUM_EPISODES = 3
 
     try:
         for episode in range(1, NUM_EPISODES + 1):
