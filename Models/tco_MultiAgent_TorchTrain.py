@@ -100,10 +100,10 @@ def main():
     current_dir = os.path.dirname(os.path.abspath(__file__))
     base_dir = os.path.abspath(os.path.join(current_dir, ".."))
         
-    net_path = os.path.join(base_dir, "dataset", "nets", "3x3grid", "3x3Grid2lanes.net.xml")
-    route_path = os.path.join(base_dir, "dataset", "nets", "3x3grid", "routes14000.rou.xml")
+    net_path = os.path.join(base_dir, "dataset", "nets", "2x2grid", "2x2.net.xml")
+    route_path = os.path.join(base_dir, "dataset", "nets", "2x2grid", "2x2.rou.xml")
 
-    model_save_path = "marl_3x3_traffic_weights.pt"       
+    model_save_path = "marl_2x2_traffic_weights.pt"       
     
     print("Initializing Multi-Agent SUMO-RL Environment...")
     env = sumo_rl.parallel_env(
@@ -139,7 +139,7 @@ def main():
             print(f"\n--- Starting Multi-Agent Episode {episode}/{NUM_EPISODES} ---")
             
             obsDict, _ = env.reset()
-            print(f"Success! 3x3 Grid initialized with {len(obsDict)} active agents.")
+            print(f"Success! 2x2 Grid initialized with {len(obsDict)} active agents.")
             done = False        
             step_count = 0
             episode_reward = 0.0

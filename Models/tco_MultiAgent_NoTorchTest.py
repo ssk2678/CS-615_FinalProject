@@ -32,11 +32,11 @@ def main():
     current_dir = os.path.dirname(os.path.abspath(__file__))
     base_dir = os.path.abspath(os.path.join(current_dir, ".."))
     
-    net_path = os.path.join(base_dir, "dataset", "nets", "3x3grid", "3x3Grid2lanes.net.xml")
-    route_path = os.path.join(base_dir, "dataset", "nets", "3x3grid", "routes14000.rou.xml")
+    net_path = os.path.join(base_dir, "dataset", "nets", "2x2grid", "2x2.net.xml")
+    route_path = os.path.join(base_dir, "dataset", "nets", "2x2grid", "2x2.rou.xml")
     
     # Direct targeting to the correct multi-agent 2x2/3x3 weights archive
-    weights_path = os.path.join(current_dir, "noTorch_marl_3x3_scratch_weights.npz")
+    weights_path = os.path.join(current_dir, "noTorch_marl_2x2_scratch_weights.npz")
 
     # Protective file path assertions
     if not os.path.exists(weights_path):

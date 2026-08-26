@@ -29,8 +29,8 @@ def main():
     base_dir = os.path.abspath(os.path.join(current_dir, ".."))
     
     # Re-targeted network paths to look into the 2x2/3x3 grid configurations
-    net_path = os.path.join(base_dir, "dataset", "nets", "3x3grid", "3x3Grid2lanes.net.xml")
-    route_path = os.path.join(base_dir, "dataset", "nets", "3x3grid", "routes14000.rou.xml")
+    net_path = os.path.join(base_dir, "dataset", "nets", "2x2grid", "2x2.net.xml")
+    route_path = os.path.join(base_dir, "dataset", "nets", "2x2grid", "2x2.rou.xml")
 
     print("Initializing Layered Multi-Agent NumPy Environment...")
     env = sumo_rl.parallel_env(

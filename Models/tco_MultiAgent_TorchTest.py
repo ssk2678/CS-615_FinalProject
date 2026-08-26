@@ -48,10 +48,10 @@ def main():
     base_dir = os.path.abspath(os.path.join(current_dir, ".."))    
     
     # Re-targeted network paths to look into the 2x2/3x3 grid configurations
-    net_path = os.path.join(base_dir, "dataset", "nets", "3x3grid", "3x3Grid2lanes.net.xml")
-    route_path = os.path.join(base_dir, "dataset", "nets", "3x3grid", "routes14000.rou.xml")
+    net_path = os.path.join(base_dir, "dataset", "nets", "2x2grid", "2x2.net.xml")
+    route_path = os.path.join(base_dir, "dataset", "nets", "2x2grid", "2x2.rou.xml")
 
-    weights_path = "marl_3x3_traffic_weights.pt"
+    weights_path = "marl_2x2_traffic_weights.pt"
 
     if not os.path.exists(weights_path):
         sys.exit(f"Missing weights file at {weights_path}! Please run the training script first.")
@@ -87,7 +87,7 @@ def main():
         net.eval()  # Disables gradient tracking overhead
         policy_networks[tl_id] = net
 
-    print("💾 Successfully loaded and mapped all trained 3x3 MARL policy weights!")
+    print("💾 Successfully loaded and mapped all trained 2x2 MARL policy weights!")
 
     try:
         print("\n▶ Press the green 'Play' button in the SUMO GUI window to start grid traffic flow...")
