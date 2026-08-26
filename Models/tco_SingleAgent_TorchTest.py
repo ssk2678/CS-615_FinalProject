@@ -37,7 +37,6 @@ def main():
         sys.exit(f"Missing weights file at {weights_path}! Please run the training script first.")
 
     print("Initializing Visual SUMO GUI Environment...")
-    # NOTE: use_gui=True enables the native SUMO visual interface window
     env = SumoEnvironment(
         net_file=net_path, 
         route_file=route_path, 
@@ -45,12 +44,12 @@ def main():
         num_seconds=3600,  
         max_depart_delay=1, 
         delta_time=5, 
-        single_agent=False
+        single_agent=True # Streamlines state representations
     )
     
-    sample_tl = env.ts_ids[0]
-    stateDim = env.observation_spaces(sample_tl).shape[0]
-    actionDim = env.action_spaces(sample_tl).n
+    # Extracting dimensions cleanly for a single agent
+    stateDim = env.observation_space.shape[0]
+    actionDim = env.action_space.n
 
     # Reconstruct network and load saved training parameters
     policyNet = DQNetwork(stateDim, actionDim)
@@ -60,29 +59,34 @@ def main():
 
     try:
         print("\n▶ Press the green 'Play' button in the SUMO GUI window to start traffic flow...")
-        obsDict = env.reset()
+        
+        # Correctly unpack Gymnasium single-agent tuple
+        obs, info = env.reset()
         done = False        
         total_eval_reward = 0.0
         
         while not done:
-            actionDict = {}
-            for tl_id, obs in obsDict.items():
-                state_t = torch.FloatTensor(obs).unsqueeze(0)
-                with torch.no_grad():
-                    # Pure exploitation: always select the absolute highest mathematical Q-value
-                    actionDict[tl_id] = torch.argmax(policyNet(state_t)).item()
+            # Process single array state instead of looping over dictionary items
+            state_t = torch.FloatTensor(obs).unsqueeze(0)
+            with torch.no_grad():
+                # Pure exploitation: always select the absolute highest mathematical Q-value
+                action = torch.argmax(policyNet(state_t)).item()
             
-            nextObsDict, rewardDict, terminatedDict, infoDict = env.step(actionDict)
-            total_eval_reward += sum(rewardDict.values())
-            obsDict = nextObsDict
-            done = all(terminatedDict.values()) or (env.sim_step >= 3600)
+            # Unpack single-agent step return variables values directly
+            next_obs, reward, terminated, truncated, info = env.step(action)
+            total_eval_reward += reward
+            obs = next_obs
+            
+            # Natural single-agent termination gate check
+            done = terminated or truncated or (env.sim_step >= 3600)
             
         print(f"\n✔ Visual evaluation finished cleanly! Total Evaluation Reward: {total_eval_reward:.2f}")
 
     except Exception as e:
         print(f"\n[EVALUATION INTERRUPTED] Loop stopped due to: {e}")
     finally:
-        env.close()      
+        if 'env' in locals() and hasattr(env, 'sumo') and env.sumo is not None:
+            env.close()      
 
 if __name__ == "__main__":
     main()

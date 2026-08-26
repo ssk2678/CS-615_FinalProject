@@ -92,7 +92,6 @@ def main():
     
 
     print("Initializing SUMO-RL Environment...")
-    # FIXED: Restored 'num_seconds' and added 'max_depart_delay' to cleanly govern flow
     env = SumoEnvironment(
         net_file=net_path, 
         route_file=route_path, 
@@ -100,12 +99,12 @@ def main():
         num_seconds=3600,  
         max_depart_delay=1, 
         delta_time=5, 
-        single_agent=False
+        single_agent=True
     )
     
-    sample_tl = env.ts_ids[0]
-    stateDim = env.observation_spaces(sample_tl).shape[0]
-    actionDim = env.action_spaces(sample_tl).n
+    # Clean extraction for single agent
+    stateDim = env.observation_space.shape[0]
+    actionDim = env.action_space.n
 
     # CSV Logging Setup
     log_file_path = "training_rewards.csv"
@@ -120,37 +119,35 @@ def main():
         for episode in range(1, NUM_EPISODES + 1):
             print(f"\n--- Starting Episode {episode}/{NUM_EPISODES} ---")
             
-            obsDict = env.reset()
+            # Unpack Gymnasium single-agent tuple properly
+            obs, info = env.reset()
             print("Success! Environment reset cleanly.")
             done = False        
             step_count = 0
             episode_reward = 0.0
             
             while not done:
-                actionDict = {tl_id: agent.selectAction(obs) for tl_id, obs in obsDict.items()}            
-                nextObsDict, rewardDict, terminatedDict, infoDict = env.step(actionDict)
+                # 'obs' variable is now correctly populated from env.reset()
+                action = agent.selectAction(obs)            
+                next_obs, reward, terminated, truncated, info = env.step(action)
                 step_count += 1
 
-                episode_reward += sum(rewardDict.values())
+                episode_reward += reward
                 
-                for tl_id in obsDict.keys():
-                    is_done = terminatedDict[tl_id]
-                    agent.memory.push(obsDict[tl_id], actionDict[tl_id], rewardDict[tl_id], nextObsDict[tl_id], is_done)
+                # Directly push the single-agent step data
+                agent.memory.push(obs, action, reward, next_obs, terminated)
 
                 agent.trainStep(32)
-                obsDict = nextObsDict
+                obs = next_obs
                 
-                # FIXED: Check natural termination OR force stop when internal clock ticks past limit
-                done = all(terminatedDict.values()) or (env.sim_step >= 3600)
-                
-                
+                # SUMO-RL single agent handles termination naturally
+                done = terminated or truncated or (env.sim_step >= 3600)
                 
                 if step_count % 100 == 0:
                     agent.targetNet.load_state_dict(agent.policyNet.state_dict())
                     
                 if step_count % 100 == 0:  
-                    avg_r = np.mean(list(rewardDict.values()))
-                    print(f"Episode {episode} | Step {step_count} | Current Step Avg Reward: {avg_r:.2f} | Epsilon: {agent.epsilon:.3f}")
+                    print(f"Episode {episode} | Step {step_count} | Current Step Reward: {reward:.2f} | Epsilon: {agent.epsilon:.3f}")
                     
             agent.targetNet.load_state_dict(agent.policyNet.state_dict())
             print(f"✔ Episode {episode} Finished! Total Accumulated Reward: {episode_reward:.2f}")
@@ -168,7 +165,6 @@ def main():
 
     finally:
         print(f"\nTraffic training loop completed! Metrics saved to {log_file_path}")
-        # FIXED: Protective gate avoids calling close() if __init__ failed before instantiation finished
         if 'env' in locals() and hasattr(env, 'sumo') and env.sumo is not None:
             env.close()      
 

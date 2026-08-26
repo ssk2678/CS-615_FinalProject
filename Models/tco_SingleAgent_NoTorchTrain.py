@@ -22,14 +22,12 @@ def main():
     print("Initializing Layered Object NumPy Environment...")
     env = SumoEnvironment(
         net_file=net_path, route_file=route_path, use_gui=True, 
-        num_seconds=3600, max_depart_delay=1, delta_time=5, single_agent=False
+        num_seconds=3600, max_depart_delay=1, delta_time=5, single_agent=True
     )
     
-    
-    sample_tl = env.ts_ids[0]    
-    
-    state_dim = env.observation_spaces(sample_tl).shape[0]
-    action_dim = env.action_spaces(sample_tl).n
+    # Clean attribute extractions mapped to single-agent gymnasium configurations
+    state_dim = env.observation_space.shape[0]
+    action_dim = env.action_space.n
     
     log_file_path = "noTorch_training_rewards.csv"
     with open(log_file_path, mode='w', newline='') as file:
@@ -42,33 +40,37 @@ def main():
     try:
         for episode in range(1, NUM_EPISODES + 1):
             print(f"\n--- Starting Layered NumPy Episode {episode}/{NUM_EPISODES} ---")
-            obs_dict = env.reset()
+            
+            # Properly unpack single-agent Gym tuple arrays
+            obs, info = env.reset()
             print("Success! Environment reset cleanly.")
             done = False
             step_count = 0
             episode_reward = 0.0
             
             while not done:
-                action_dict = {tl_id: agent.select_action(obs) for tl_id, obs in obs_dict.items()}
-                next_obs_dict, reward_dict, terminated_dict, info_dict = env.step(action_dict)
+                # Stripped dictionary comprehension; directly call the raw observation array
+                action = agent.select_action(obs)
+                
+                # Directly unpack standard scalar return metrics
+                next_obs, reward, terminated, truncated, info = env.step(action)
                 step_count += 1
 
-                episode_reward += sum(reward_dict.values())
+                episode_reward += reward
                 
-                for tl_id in obs_dict.keys():
-                    is_done = terminated_dict[tl_id]
-                    agent.memory.push(obs_dict[tl_id], action_dict[tl_id], reward_dict[tl_id], next_obs_dict[tl_id], is_done)
+                # Push clean flat step data pairs straight to memory buffer
+                agent.memory.push(obs, action, reward, next_obs, terminated)
                     
                 agent.train_step(32)
-                obs_dict = next_obs_dict
-                done = all(terminated_dict.values()) or (env.sim_step >= 3600)
+                obs = next_obs
                 
+                # Aligned single agent termination validation metrics
+                done = terminated or truncated or (env.sim_step >= 3600)
                 
                 if step_count % 100 == 0:
                     agent.target_net.copy_weights_from(agent.policy_net)
                 if step_count % 100 == 0:
-                    avg_r = np.mean(list(reward_dict.values()))
-                    print(f"Layered NumPy Ep {episode} | Step {step_count} | Avg Reward: {avg_r:.2f} | Epsilon: {agent.epsilon:.3f}")
+                    print(f"Layered NumPy Ep {episode} | Step {step_count} | Step Reward: {reward:.2f} | Epsilon: {agent.epsilon:.3f}")
             
             agent.target_net.copy_weights_from(agent.policy_net)
             print(f"✔ Layered NumPy Episode {episode} Finished! Total Reward: {episode_reward:.2f}")
