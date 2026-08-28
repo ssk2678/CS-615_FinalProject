@@ -100,10 +100,10 @@ def main():
     current_dir = os.path.dirname(os.path.abspath(__file__))
     base_dir = os.path.abspath(os.path.join(current_dir, ".."))
         
-    net_path = os.path.join(base_dir, "dataset", "nets", "2x2grid", "2x2.net.xml")
-    route_path = os.path.join(base_dir, "dataset", "nets", "2x2grid", "2x2.rou.xml")
+    net_path = os.path.join(base_dir, "dataset", "nets", "4x4-Lucas", "4x4.net.xml")
+    route_path = os.path.join(base_dir, "dataset", "nets", "4x4-Lucas", "4x4c1.rou.xml")
 
-    model_save_path = "marl_2x2_traffic_weights.pt"       
+    model_save_path = "marl_4x4_traffic_weights.pt"
     
     print("Initializing Multi-Agent SUMO-RL Environment...")
     env = sumo_rl.parallel_env(
@@ -127,7 +127,7 @@ def main():
         agents[tl_id] = PyTorchAgent(stateDim, actionDim)
 
     # CSV Logging Setup
-    log_file_path = "marl_training_rewards.csv"
+    log_file_path = "marl_4x4_training_rewards.csv"
     with open(log_file_path, mode='w', newline='') as file:
         writer = csv.writer(file)
         writer.writerow(["Episode", "Total_Reward", "Mean_Epsilon"])
@@ -139,7 +139,7 @@ def main():
             print(f"\n--- Starting Multi-Agent Episode {episode}/{NUM_EPISODES} ---")
             
             obsDict, _ = env.reset()
-            print(f"Success! 2x2 Grid initialized with {len(obsDict)} active agents.")
+            print(f"Success! 4x4 Grid initialized with {len(obsDict)} active agents.")
             done = False        
             step_count = 0
             episode_reward = 0.0
@@ -209,3 +209,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+

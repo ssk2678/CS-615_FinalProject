@@ -28,9 +28,8 @@ def main():
     current_dir = os.path.dirname(os.path.abspath(__file__))
     base_dir = os.path.abspath(os.path.join(current_dir, ".."))
     
-    # Re-targeted network paths to look into the 2x2/3x3 grid configurations
-    net_path = os.path.join(base_dir, "dataset", "nets", "2x2grid", "2x2.net.xml")
-    route_path = os.path.join(base_dir, "dataset", "nets", "2x2grid", "2x2.rou.xml")
+    net_path = os.path.join(base_dir, "dataset", "nets", "4x4-Lucas", "4x4.net.xml")
+    route_path = os.path.join(base_dir, "dataset", "nets", "4x4-Lucas", "4x4c1.rou.xml")
 
     print("Initializing Layered Multi-Agent NumPy Environment...")
     env = sumo_rl.parallel_env(
@@ -55,7 +54,7 @@ def main():
         agents[tl_id] = Agent(state_dim, action_dim)
     
     # CSV Logging Setup
-    log_file_path = "noTorch_marl_training_rewards.csv"
+    log_file_path = "noTorch_marl_4x4_training_rewards.csv"
     with open(log_file_path, mode='w', newline='') as file:
         writer = csv.writer(file)
         writer.writerow(["Episode", "Total_Reward", "Mean_Epsilon"])
@@ -66,7 +65,7 @@ def main():
         for episode in range(1, NUM_EPISODES + 1):
             print(f"\n--- Starting Layered NumPy Multi-Agent Episode {episode}/{NUM_EPISODES} ---")
             obs_dict, _ = env.reset() # PettingZoo wrapper returns (obs, info) on reset
-            print(f"Success! 3x3 Grid initialized with {len(obs_dict)} active NumPy agents.")
+            print(f"Success! 4x4 Grid initialized with {len(obs_dict)} active NumPy agents.")
             done = False
             step_count = 0
             episode_reward = 0.0
@@ -123,8 +122,8 @@ def main():
                 writer = csv.writer(file)
                 writer.writerow([episode, episode_reward, mean_final_eps])
 
-            # Archive all 4 distinct sets of weights under tagged index headers to prevent overwriting
-            weight_save_path = "noTorch_marl_3x3_scratch_weights.npz"
+            # Archive each agent's weights under its traffic-light ID.
+            weight_save_path = "noTorch_marl_4x4_scratch_weights.npz"
             archive_data = {}
             for tl_id, agent_node in agents.items():
                 archive_data[f"{tl_id}_W1"] = agent_node.policy_net.layer1.W
@@ -133,7 +132,7 @@ def main():
                 archive_data[f"{tl_id}_b2"] = agent_node.policy_net.layer2.b
                 
             np.savez(weight_save_path, **archive_data)
-            print(f"💾 Saved comprehensive 3x3 multi-agent parameter matrices to:\n➡ {weight_save_path}")
+            print(f"💾 Saved comprehensive 4x4 multi-agent parameter matrices to:\n➡ {weight_save_path}")
 
     except Exception as e:
         print(f"\n[CRASH DETECTED] Script failed due to: {e}")
@@ -144,3 +143,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+

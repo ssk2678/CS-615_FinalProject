@@ -35,7 +35,6 @@ def main():
     net_path = os.path.join(base_dir, "dataset", "nets", "2x2grid", "2x2.net.xml")
     route_path = os.path.join(base_dir, "dataset", "nets", "2x2grid", "2x2.rou.xml")
     
-    # Direct targeting to the correct multi-agent 2x2/3x3 weights archive
     weights_path = os.path.join(current_dir, "noTorch_marl_2x2_scratch_weights.npz")
 
     # Protective file path assertions
@@ -118,3 +117,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+
