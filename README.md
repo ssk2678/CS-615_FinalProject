@@ -3,7 +3,7 @@
 This project trains Deep Q Networks (DQNs) to control traffic signals in SUMO. It includes:
 
 - PyTorch and handwritten NumPy (`NoTorch`) implementations.
-- Single-intersection and multi-agent grid environments.
+- Single-intersection and multi-intersection grid environments.
 - `2x2` and `4x4` multi-agent scenarios.
 - Standard SUMO-RL rewards and optional Zhang-style partial observations/rewards.
 
