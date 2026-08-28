@@ -1,5 +1,6 @@
 import os
 import sys
+import argparse
 import random
 import torch
 import torch.nn as nn
@@ -8,6 +9,7 @@ from collections import deque
 import numpy as np
 import csv  
 from sumo_rl import SumoEnvironment
+from multiagent_zhang import mask_observation, zhang_reward
 
 # KEEP THIS: Crucial for Linux virtual environment stability
 if 'SUMO_HOME' in os.environ:
@@ -65,7 +67,7 @@ class PyTorchAgent:
 
     def trainStep(self, batchSize):
         if len(self.memory) < batchSize: 
-            return
+            return None
         states, actions, rewards, nextStates, dones = self.memory.sample(batchSize)
         currentQ = self.policyNet(states).gather(1, actions.unsqueeze(1)).squeeze(1)
         with torch.no_grad():
@@ -80,15 +82,20 @@ class PyTorchAgent:
         
         if self.epsilon > self.epsilon_min: 
             self.epsilon *= self.epsilon_decay
+        return loss.item()
 
 def main():
+    parser = argparse.ArgumentParser(description="Train a single-agent PyTorch DQN.")
+    parser.add_argument("--zhang", action="store_true", help="Use partial observations and the Zhang reward.")
+    args = parser.parse_args()
+
     current_dir = os.path.dirname(os.path.abspath(__file__))
     base_dir = os.path.abspath(os.path.join(current_dir, ".."))
         
     net_path = os.path.join(base_dir, "dataset", "nets", "single-intersection", "single-intersection.net.xml")
     route_path = os.path.join(base_dir, "dataset", "nets", "single-intersection", "single-intersection.rou.xml")
 
-    model_save_path = "dqn_traffic_weights.pt"       
+    model_save_path = "zhang_dqn_partial_weights.pt" if args.zhang else "dqn_traffic_weights.pt"
     
 
     print("Initializing SUMO-RL Environment...")
@@ -99,7 +106,8 @@ def main():
         num_seconds=3600,  
         max_depart_delay=1, 
         delta_time=5, 
-        single_agent=True
+        single_agent=True,
+        reward_fn=zhang_reward if args.zhang else "diff-waiting-time"
     )
     
     # Clean extraction for single agent
@@ -107,7 +115,9 @@ def main():
     actionDim = env.action_space.n
 
     # CSV Logging Setup
-    log_file_path = "training_rewards.csv"
+    log_file_path = "zhang_training_rewards.csv" if args.zhang else "training_rewards.csv"
+    step_log_file_path = log_file_path.replace("_rewards.csv", "_step_metrics.csv")
+    step_records = []
     with open(log_file_path, mode='w', newline='') as file:
         writer = csv.writer(file)
         writer.writerow(["Episode", "Total_Reward", "Final_Epsilon"])
@@ -121,6 +131,8 @@ def main():
             
             # Unpack Gymnasium single-agent tuple properly
             obs, info = env.reset()
+            if args.zhang:
+                obs = mask_observation(obs, actionDim)
             print("Success! Environment reset cleanly.")
             done = False        
             step_count = 0
@@ -130,6 +142,8 @@ def main():
                 # 'obs' variable is now correctly populated from env.reset()
                 action = agent.selectAction(obs)            
                 next_obs, reward, terminated, truncated, info = env.step(action)
+                if args.zhang:
+                    next_obs = mask_observation(next_obs, actionDim)
                 step_count += 1
 
                 episode_reward += reward
@@ -137,8 +151,13 @@ def main():
                 # Directly push the single-agent step data
                 agent.memory.push(obs, action, reward, next_obs, terminated)
 
-                agent.trainStep(32)
+                loss = agent.trainStep(32)
                 obs = next_obs
+
+                step_records.append([
+                    episode, step_count, action, reward, episode_reward,
+                    agent.epsilon, loss, terminated, truncated
+                ])
                 
                 # SUMO-RL single agent handles termination naturally
                 done = terminated or truncated or (env.sim_step >= 3600)
@@ -164,7 +183,14 @@ def main():
         print(f"\n[CRASH DETECTED] Script failed due to: {e}")
 
     finally:
-        print(f"\nTraffic training loop completed! Metrics saved to {log_file_path}")
+        with open(step_log_file_path, mode='w', newline='') as file:
+            writer = csv.writer(file)
+            writer.writerow([
+                "Episode", "Step", "Action", "Reward", "Episode_Total_Reward",
+                "Epsilon", "Loss", "Terminated", "Truncated"
+            ])
+            writer.writerows(step_records)
+        print(f"\nTraffic training loop completed! Metrics saved to {log_file_path} and {step_log_file_path}")
         if 'env' in locals() and hasattr(env, 'sumo') and env.sumo is not None:
             env.close()      
 

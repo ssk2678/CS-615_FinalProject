@@ -1,5 +1,6 @@
 import os
 import sys
+import argparse
 import numpy as np
 # =====================================================================
 # 🔥 Resolve the PettingZoo agent_selector module conflict
@@ -18,6 +19,7 @@ import sumo_rl  # Required for parallel_env multi-agent execution wrapper
 
 # Clean local module imports from the layer library layout
 from DeepQNetwork import DQN
+from multiagent_zhang import mask_observations, zhang_reward
 
 # KEEP THIS: Crucial for Linux virtual environment stability
 if 'SUMO_HOME' in os.environ:
@@ -29,13 +31,23 @@ else:
 
 
 def main():
+    parser = argparse.ArgumentParser(description="Test a NumPy multi-agent DQN.")
+    parser.add_argument("--scenario", choices=("2x2", "4x4"), required=True)
+    parser.add_argument("--zhang", action="store_true", help="Use partial observations and the Zhang reward.")
+    args = parser.parse_args()
+
     current_dir = os.path.dirname(os.path.abspath(__file__))
     base_dir = os.path.abspath(os.path.join(current_dir, ".."))
-    
-    net_path = os.path.join(base_dir, "dataset", "nets", "2x2grid", "2x2.net.xml")
-    route_path = os.path.join(base_dir, "dataset", "nets", "2x2grid", "2x2.rou.xml")
-    
-    weights_path = os.path.join(current_dir, "noTorch_marl_2x2_scratch_weights.npz")
+
+    if args.scenario == "2x2":
+        scenario_dir, net_file, route_file = "2x2grid", "2x2.net.xml", "2x2.rou.xml"
+    else:
+        scenario_dir, net_file, route_file = "4x4-Lucas", "4x4.net.xml", "4x4c1.rou.xml"
+
+    net_path = os.path.join(base_dir, "dataset", "nets", scenario_dir, net_file)
+    route_path = os.path.join(base_dir, "dataset", "nets", scenario_dir, route_file)
+    mode_suffix = "_zhang" if args.zhang else ""
+    weights_path = os.path.join(current_dir, f"noTorch_marl_{args.scenario}{mode_suffix}_scratch_weights.npz")
 
     # Protective file path assertions
     if not os.path.exists(weights_path):
@@ -48,7 +60,8 @@ def main():
         use_gui=True, 
         num_seconds=3600, 
         max_depart_delay=1,
-        delta_time=5
+        delta_time=5,
+        reward_fn=zhang_reward if args.zhang else "diff-waiting-time"
     )
     
     # Trigger a baseline environment initialization step to pull topology dimensions
@@ -81,6 +94,8 @@ def main():
     try:
         # PettingZoo parallel environment reset structure returns (obs, info) tuple
         obs_dict, _ = env.reset()
+        if args.zhang:
+            obs_dict = mask_observations(obs_dict, env)
         done = False        
         total_test_reward = 0.0
         step_count = 0
@@ -95,6 +110,8 @@ def main():
             
             # Step execution returns 5 dictionary objects
             next_obs_dict, reward_dict, terminated_dict, truncated_dict, info_dict = env.step(action_dict)
+            if args.zhang:
+                next_obs_dict = mask_observations(next_obs_dict, env)
             
             total_test_reward += sum(reward_dict.values())
             obs_dict = next_obs_dict
@@ -117,4 +134,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

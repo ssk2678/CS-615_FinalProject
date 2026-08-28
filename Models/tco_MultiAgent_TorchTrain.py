@@ -1,5 +1,6 @@
 import os
 import sys
+import argparse
 import random
 import torch
 import torch.nn as nn
@@ -21,6 +22,7 @@ except ImportError:
     pass
 # =====================================================================  
 import sumo_rl  # Required for parallel_env MARL mapping
+from multiagent_zhang import mask_observations, zhang_reward
 
 # KEEP THIS: Crucial for Linux virtual environment stability
 if 'SUMO_HOME' in os.environ:
@@ -80,7 +82,7 @@ class PyTorchAgent:
 
     def trainStep(self, batchSize):
         if len(self.memory) < batchSize: 
-            return
+            return None
         states, actions, rewards, nextStates, dones = self.memory.sample(batchSize)
         currentQ = self.policyNet(states).gather(1, actions.unsqueeze(1)).squeeze(1)
         with torch.no_grad():
@@ -95,15 +97,26 @@ class PyTorchAgent:
         
         if self.epsilon > self.epsilon_min: 
             self.epsilon *= self.epsilon_decay
+        return loss.item()
 
 def main():
+    parser = argparse.ArgumentParser(description="Train a PyTorch multi-agent DQN.")
+    parser.add_argument("--scenario", choices=("2x2", "4x4"), required=True)
+    parser.add_argument("--zhang", action="store_true", help="Use partial observations and the Zhang reward.")
+    args = parser.parse_args()
+
     current_dir = os.path.dirname(os.path.abspath(__file__))
     base_dir = os.path.abspath(os.path.join(current_dir, ".."))
-        
-    net_path = os.path.join(base_dir, "dataset", "nets", "4x4-Lucas", "4x4.net.xml")
-    route_path = os.path.join(base_dir, "dataset", "nets", "4x4-Lucas", "4x4c1.rou.xml")
 
-    model_save_path = "marl_4x4_traffic_weights.pt"
+    if args.scenario == "2x2":
+        scenario_dir, net_file, route_file = "2x2grid", "2x2.net.xml", "2x2.rou.xml"
+    else:
+        scenario_dir, net_file, route_file = "4x4-Lucas", "4x4.net.xml", "4x4c1.rou.xml"
+
+    net_path = os.path.join(base_dir, "dataset", "nets", scenario_dir, net_file)
+    route_path = os.path.join(base_dir, "dataset", "nets", scenario_dir, route_file)
+    mode_suffix = "_zhang" if args.zhang else ""
+    model_save_path = f"marl_{args.scenario}{mode_suffix}_traffic_weights.pt"
     
     print("Initializing Multi-Agent SUMO-RL Environment...")
     env = sumo_rl.parallel_env(
@@ -112,7 +125,8 @@ def main():
         use_gui=True, 
         num_seconds=3600,  
         max_depart_delay=1, 
-        delta_time=5
+        delta_time=5,
+        reward_fn=zhang_reward if args.zhang else "diff-waiting-time"
     )
     
     # Run a brief reset call to initialize internal agent tracking spaces
@@ -127,7 +141,9 @@ def main():
         agents[tl_id] = PyTorchAgent(stateDim, actionDim)
 
     # CSV Logging Setup
-    log_file_path = "marl_4x4_training_rewards.csv"
+    log_file_path = f"marl_{args.scenario}{mode_suffix}_training_rewards.csv"
+    step_log_file_path = log_file_path.replace("_rewards.csv", "_step_metrics.csv")
+    step_records = []
     with open(log_file_path, mode='w', newline='') as file:
         writer = csv.writer(file)
         writer.writerow(["Episode", "Total_Reward", "Mean_Epsilon"])
@@ -139,7 +155,9 @@ def main():
             print(f"\n--- Starting Multi-Agent Episode {episode}/{NUM_EPISODES} ---")
             
             obsDict, _ = env.reset()
-            print(f"Success! 4x4 Grid initialized with {len(obsDict)} active agents.")
+            if args.zhang:
+                obsDict = mask_observations(obsDict, env)
+            print(f"Success! {args.scenario} Grid initialized with {len(obsDict)} active agents.")
             done = False        
             step_count = 0
             episode_reward = 0.0
@@ -150,11 +168,15 @@ def main():
                 
                 # Step parallel execution returns 5 dictionary objects
                 nextObsDict, rewardDict, terminated_dict, truncated_dict, infoDict = env.step(actionDict)
+                if args.zhang:
+                    nextObsDict = mask_observations(nextObsDict, env)
                 step_count += 1
 
-                episode_reward += sum(rewardDict.values())
+                total_step_reward = sum(rewardDict.values())
+                episode_reward += total_step_reward
                 
                 # Train and push memories selectively per active agent
+                step_losses = {}
                 for tl_id in obsDict.keys():
                     is_done = terminated_dict[tl_id] or truncated_dict[tl_id]
                     
@@ -168,7 +190,16 @@ def main():
                     )
                     
                     # Update parameters for this specific traffic signal node
-                    agents[tl_id].trainStep(32)
+                    step_losses[tl_id] = agents[tl_id].trainStep(32)
+
+                mean_step_epsilon = np.mean([a.epsilon for a in agents.values()])
+                for tl_id in obsDict.keys():
+                    step_records.append([
+                        episode, step_count, tl_id, actionDict[tl_id], rewardDict[tl_id],
+                        total_step_reward, episode_reward, agents[tl_id].epsilon,
+                        mean_step_epsilon, step_losses[tl_id],
+                        terminated_dict[tl_id], truncated_dict[tl_id]
+                    ])
 
                 obsDict = nextObsDict
                                 
@@ -203,10 +234,17 @@ def main():
         print(f"\n[CRASH DETECTED] Script failed due to: {e}")
 
     finally:
-        print(f"\nMulti-Agent training loop completed! Metrics saved to {log_file_path}")
+        with open(step_log_file_path, mode='w', newline='') as file:
+            writer = csv.writer(file)
+            writer.writerow([
+                "Episode", "Step", "Agent_ID", "Action", "Agent_Reward",
+                "Total_Step_Reward", "Episode_Total_Reward", "Agent_Epsilon",
+                "Mean_Epsilon", "Loss", "Terminated", "Truncated"
+            ])
+            writer.writerows(step_records)
+        print(f"\nMulti-Agent training loop completed! Metrics saved to {log_file_path} and {step_log_file_path}")
         if 'env' in locals() and hasattr(env, 'close'):
             env.close()      
 
 if __name__ == "__main__":
     main()
-

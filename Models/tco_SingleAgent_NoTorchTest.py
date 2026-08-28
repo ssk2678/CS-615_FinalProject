@@ -1,8 +1,10 @@
 import os
 import sys
+import argparse
 import numpy as np
 from sumo_rl import SumoEnvironment
 from DeepQNAgent import Agent
+from multiagent_zhang import mask_observation, zhang_reward
 
 if 'SUMO_HOME' in os.environ:
     tools = os.path.join(os.environ['SUMO_HOME'], 'tools')
@@ -12,13 +14,17 @@ else:
     sys.exit("Please declare the environment variable 'SUMO_HOME'")
 
 def main():
+    parser = argparse.ArgumentParser(description="Test a single-agent NumPy DQN.")
+    parser.add_argument("--zhang", action="store_true", help="Use partial observations and the Zhang reward.")
+    args = parser.parse_args()
+
     current_dir = os.path.dirname(os.path.abspath(__file__))
     base_dir = os.path.abspath(os.path.join(current_dir, ".."))
     
     net_path = os.path.join(base_dir, "dataset", "nets", "single-intersection", "single-intersection.net.xml")
     route_path = os.path.join(base_dir, "dataset", "nets", "single-intersection", "single-intersection.rou.xml")
 
-    weights_path = "noTorch_scratch_weights.npz"
+    weights_path = "noTorch_zhang_scratch_weights.npz" if args.zhang else "noTorch_scratch_weights.npz"
 
     if not os.path.exists(weights_path):
         sys.exit(f"Missing weights file at {weights_path}! Please run the NoTorch training script first.")
@@ -26,7 +32,8 @@ def main():
     print("Initializing Visual SUMO GUI Environment (NumPy)...")
     env = SumoEnvironment(
         net_file=net_path, route_file=route_path, use_gui=True, 
-        num_seconds=3600, max_depart_delay=1, delta_time=5, single_agent=True
+        num_seconds=3600, max_depart_delay=1, delta_time=5, single_agent=True,
+        reward_fn=zhang_reward if args.zhang else "diff-waiting-time"
     )
     
     # Direct single-agent space configurations
@@ -52,6 +59,8 @@ def main():
         
         # Correctly unpack Gymnasium single-agent tuple
         obs, info = env.reset()
+        if args.zhang:
+            obs = mask_observation(obs, action_dim)
         done = False        
         total_eval_reward = 0.0
         
@@ -61,6 +70,8 @@ def main():
             
             # Process direct single-agent trajectory signals
             next_obs, reward, terminated, truncated, info = env.step(action)
+            if args.zhang:
+                next_obs = mask_observation(next_obs, action_dim)
             total_eval_reward += reward
             obs = next_obs
             

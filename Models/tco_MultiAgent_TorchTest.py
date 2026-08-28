@@ -1,5 +1,6 @@
 import os
 import sys
+import argparse
 import torch
 import torch.nn as nn
 import numpy as np
@@ -16,6 +17,7 @@ except ImportError:
     pass
 # =====================================================================  
 import sumo_rl  # Required for parallel_env multi-agent execution wrapper
+from multiagent_zhang import mask_observations, zhang_reward
 
 # KEEP THIS: Crucial for Linux virtual environment stability
 if 'SUMO_HOME' in os.environ:
@@ -44,13 +46,23 @@ class DQNetwork(nn.Module):
         return self.fullyConnected(x)
 
 def main():
-    current_dir = os.path.dirname(os.path.abspath(__file__))
-    base_dir = os.path.abspath(os.path.join(current_dir, ".."))    
-    
-    net_path = os.path.join(base_dir, "dataset", "nets", "4x4-Lucas", "4x4.net.xml")
-    route_path = os.path.join(base_dir, "dataset", "nets", "4x4-Lucas", "4x4c1.rou.xml")
+    parser = argparse.ArgumentParser(description="Test a PyTorch multi-agent DQN.")
+    parser.add_argument("--scenario", choices=("2x2", "4x4"), required=True)
+    parser.add_argument("--zhang", action="store_true", help="Use partial observations and the Zhang reward.")
+    args = parser.parse_args()
 
-    weights_path = "marl_4x4_traffic_weights.pt"
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    base_dir = os.path.abspath(os.path.join(current_dir, ".."))
+
+    if args.scenario == "2x2":
+        scenario_dir, net_file, route_file = "2x2grid", "2x2.net.xml", "2x2.rou.xml"
+    else:
+        scenario_dir, net_file, route_file = "4x4-Lucas", "4x4.net.xml", "4x4c1.rou.xml"
+
+    net_path = os.path.join(base_dir, "dataset", "nets", scenario_dir, net_file)
+    route_path = os.path.join(base_dir, "dataset", "nets", scenario_dir, route_file)
+    mode_suffix = "_zhang" if args.zhang else ""
+    weights_path = f"marl_{args.scenario}{mode_suffix}_traffic_weights.pt"
 
     if not os.path.exists(weights_path):
         sys.exit(f"Missing weights file at {weights_path}! Please run the training script first.")
@@ -62,7 +74,8 @@ def main():
         use_gui=True, 
         num_seconds=3600,  
         max_depart_delay=1, 
-        delta_time=5
+        delta_time=5,
+        reward_fn=zhang_reward if args.zhang else "diff-waiting-time"
     )
     
     # Trigger a baseline environment initialization step to pull topology dimensions
@@ -86,11 +99,13 @@ def main():
         net.eval()  # Disables gradient tracking overhead
         policy_networks[tl_id] = net
 
-    print("💾 Successfully loaded and mapped all trained 4x4 MARL policy weights!")
+    print(f"💾 Successfully loaded and mapped all trained {args.scenario} MARL policy weights!")
 
     try:
         print("\n▶ Press the green 'Play' button in the SUMO GUI window to start grid traffic flow...")
         obsDict, _ = env.reset() # PettingZoo wrapper returns (obs, info) on reset
+        if args.zhang:
+            obsDict = mask_observations(obsDict, env)
         done = False        
         total_eval_reward = 0.0
         step_count = 0
@@ -106,6 +121,8 @@ def main():
             
             # Step execution returns 5 dictionary objects
             nextObsDict, rewardDict, terminatedDict, truncatedDict, infoDict = env.step(actionDict)
+            if args.zhang:
+                nextObsDict = mask_observations(nextObsDict, env)
             
             total_eval_reward += sum(rewardDict.values())
             obsDict = nextObsDict
@@ -124,4 +141,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

@@ -1,9 +1,11 @@
 import os
 import sys
+import argparse
 import torch
 import torch.nn as nn
 import numpy as np
 from sumo_rl import SumoEnvironment
+from multiagent_zhang import mask_observation, zhang_reward
 
 # KEEP THIS: Crucial for Linux virtual environment stability
 if 'SUMO_HOME' in os.environ:
@@ -26,12 +28,16 @@ class DQNetwork(nn.Module):
         return self.fullyConnected(x)
 
 def main():
+    parser = argparse.ArgumentParser(description="Test a single-agent PyTorch DQN.")
+    parser.add_argument("--zhang", action="store_true", help="Use partial observations and the Zhang reward.")
+    args = parser.parse_args()
+
     current_dir = os.path.dirname(os.path.abspath(__file__))
     base_dir = os.path.abspath(os.path.join(current_dir, ".."))    
     net_path = os.path.join(base_dir, "dataset", "nets", "single-intersection", "single-intersection.net.xml")
     route_path = os.path.join(base_dir, "dataset", "nets", "single-intersection", "single-intersection.rou.xml")
 
-    weights_path = "dqn_traffic_weights.pt"
+    weights_path = "zhang_dqn_partial_weights.pt" if args.zhang else "dqn_traffic_weights.pt"
 
     if not os.path.exists(weights_path):
         sys.exit(f"Missing weights file at {weights_path}! Please run the training script first.")
@@ -44,7 +50,8 @@ def main():
         num_seconds=3600,  
         max_depart_delay=1, 
         delta_time=5, 
-        single_agent=True # Streamlines state representations
+        single_agent=True, # Streamlines state representations
+        reward_fn=zhang_reward if args.zhang else "diff-waiting-time"
     )
     
     # Extracting dimensions cleanly for a single agent
@@ -62,6 +69,8 @@ def main():
         
         # Correctly unpack Gymnasium single-agent tuple
         obs, info = env.reset()
+        if args.zhang:
+            obs = mask_observation(obs, actionDim)
         done = False        
         total_eval_reward = 0.0
         
@@ -74,6 +83,8 @@ def main():
             
             # Unpack single-agent step return variables values directly
             next_obs, reward, terminated, truncated, info = env.step(action)
+            if args.zhang:
+                next_obs = mask_observation(next_obs, actionDim)
             total_eval_reward += reward
             obs = next_obs
             

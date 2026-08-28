@@ -24,7 +24,7 @@ class Agent:
 
     def train_step(self, batch_size):
         if len(self.memory) < batch_size: 
-            return
+            return None
             
         states, actions, rewards, next_states, dones = self.memory.sample(batch_size)
         
@@ -35,6 +35,8 @@ class Agent:
         
         # 2. Forward pass through active Policy Network
         current_q_values = self.policy_net.forward(states)
+        selected_q_values = current_q_values[np.arange(batch_size), actions]
+        loss = np.mean((selected_q_values - targets) ** 2)
         
         # 3. Initialize loss gradient at the final layer output
         d_out = np.zeros_like(current_q_values)
@@ -47,3 +49,4 @@ class Agent:
         
         if self.epsilon > self.epsilon_min: 
             self.epsilon *= self.epsilon_decay
+        return float(loss)
