@@ -11,7 +11,7 @@ class Agent:
         self.target_net.copy_weights_from(self.policy_net)
         
         self.memory = ReplayBuffer(10000)
-        # Optimized 2-episode training loop constants
+        # Optimized 3-episode training loop constants
         self.gamma, self.epsilon, self.epsilon_min, self.epsilon_decay = 0.99, 1.0, 0.05, 0.998
 
     def select_action(self, state):
