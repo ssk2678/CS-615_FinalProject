@@ -1,0 +1,19 @@
+Step #0.00 (0ms ?*RT. ?UPS, TraCI: 3ms, vehicles TOT 0 ACT 0 BUF 0)                      
+/home/tnmfdrt/miniconda3/envs/cs615-sumo/lib/python3.11/site-packages/pettingzoo/utils/conversions.py:129: UserWarning: The base environment `sumo_rl_v0` does not have a `render_mode` defined.
+  warnings.warn(
+Initializing Multi-Agent Evaluation Environment...
+ Retrying in 1 seconds
+ Retrying in 1 seconds
+Loading raw NumPy parameter block weights...
+💾 Successfully restored all layer nodes! Commencing test verification curve...
+ Retrying in 1 seconds
+Test Step 100 | Accumulated Step Reward: -1.27
+Test Step 200 | Accumulated Step Reward: -2.38
+Test Step 300 | Accumulated Step Reward: -2.46
+Test Step 400 | Accumulated Step Reward: -2.76
+Test Step 500 | Accumulated Step Reward: -1.33
+Test Step 600 | Accumulated Step Reward: -1.74
+Test Step 700 | Accumulated Step Reward: -1.63
+
+✔ NumPy Test Evaluation finished cleanly!
+➡ Final Deterministic Test Score: -1404.01

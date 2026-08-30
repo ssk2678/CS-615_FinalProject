@@ -1,0 +1,23 @@
+Step #0.00 (0ms ?*RT. ?UPS, TraCI: 6ms, vehicles TOT 0 ACT 0 BUF 0)                      
+/home/tnmfdrt/miniconda3/envs/cs615-sumo/lib/python3.11/site-packages/pettingzoo/utils/conversions.py:129: UserWarning: The base environment `sumo_rl_v0` does not have a `render_mode` defined.
+  warnings.warn(
+Initializing multi-agent SUMO evaluation environment...
+ Retrying in 1 seconds
+ Retrying in 1 seconds
+ Retrying in 1 seconds
+
+=== BEFORE: RANDOM NETWORKS ===
+Press the green 'Play' button in SUMO if the simulation is paused.
+Random networks reward: -8419.91
+Loaded trained weights from /home/tnmfdrt/Documents/Class/CS615/CS-615_FinalProject-main/Models/marl_4x4_zhang_traffic_weights.pt
+ Retrying in 1 seconds
+
+=== AFTER: TRAINED NETWORKS ===
+Press the green 'Play' button in SUMO if the simulation is paused.
+Trained networks reward: -8642.13
+
+=== TEST SUMMARY ===
+Before (Random) Reward: -8419.91
+After (Trained) Reward: -8642.13
+Delta (After - Before): -222.22
+Result: WORSE

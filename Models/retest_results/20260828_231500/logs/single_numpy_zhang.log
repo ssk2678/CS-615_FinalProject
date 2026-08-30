@@ -1,0 +1,20 @@
+Step #0.00 (0ms ?*RT. ?UPS, TraCI: 1ms, vehicles TOT 0 ACT 0 BUF 0)                      
+Initializing single-agent SUMO evaluation environment (NumPy)...
+ Retrying in 1 seconds
+ Retrying in 1 seconds
+
+=== BEFORE: RANDOM NETWORK ===
+Press the green 'Play' button in SUMO if the simulation is paused.
+Random network reward: -569.55
+Loaded trained weights from /home/tnmfdrt/Documents/Class/CS615/CS-615_FinalProject-main/Models/noTorch_zhang_scratch_weights.npz
+ Retrying in 1 seconds
+
+=== AFTER: TRAINED NETWORK ===
+Press the green 'Play' button in SUMO if the simulation is paused.
+Trained network reward: -393.75
+
+=== TEST SUMMARY ===
+Before (Random) Reward: -569.55
+After (Trained) Reward: -393.75
+Delta (After - Before): +175.80
+Result: IMPROVED

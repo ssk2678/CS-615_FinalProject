@@ -1,0 +1,9 @@
+single_torch_standard	Single | PyTorch | Standard	-0.27
+single_torch_zhang	Single | PyTorch | Zhang-style	-457.06
+single_numpy_standard	Single | NumPy | Standard	-0.47
+single_numpy_zhang	Single | NumPy | Zhang-style	-396.87
+2x2_torch_standard	2x2 | PyTorch | Standard	-1.82
+2x2_torch_zhang	2x2 | PyTorch | Zhang-style	-1368.02
+2x2_numpy_standard	2x2 | NumPy | Standard	-350.26
+2x2_numpy_zhang	2x2 | NumPy | Zhang-style	-1404.01
+4x4_torch_standard	4x4 | PyTorch | Standard	-25.38

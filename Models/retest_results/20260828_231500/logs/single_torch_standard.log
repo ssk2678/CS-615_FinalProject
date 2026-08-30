@@ -1,0 +1,20 @@
+Step #0.00 (0ms ?*RT. ?UPS, TraCI: 1ms, vehicles TOT 0 ACT 0 BUF 0)                      
+Initializing single-agent SUMO evaluation environment...
+ Retrying in 1 seconds
+ Retrying in 1 seconds
+
+=== BEFORE: RANDOM NETWORK ===
+Press the green 'Play' button in SUMO if the simulation is paused.
+Random network reward: -380.00
+Loaded trained weights from /home/tnmfdrt/Documents/Class/CS615/CS-615_FinalProject-main/Models/dqn_traffic_weights.pt
+ Retrying in 1 seconds
+
+=== AFTER: TRAINED NETWORK ===
+Press the green 'Play' button in SUMO if the simulation is paused.
+Trained network reward: -0.27
+
+=== TEST SUMMARY ===
+Before (Random) Reward: -380.00
+After (Trained) Reward: -0.27
+Delta (After - Before): +379.73
+Result: IMPROVED

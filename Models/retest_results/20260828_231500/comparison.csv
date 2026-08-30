@@ -1,0 +1,13 @@
+Configuration,Before Random,After Trained,Delta,Result
+"Single | PyTorch | Standard",-380.00,-0.27,+379.73,IMPROVED
+"Single | PyTorch | Zhang-style",-587.81,-457.06,+130.75,IMPROVED
+"Single | NumPy | Standard",-380.00,-0.47,+379.53,IMPROVED
+"Single | NumPy | Zhang-style",-569.55,-393.75,+175.80,IMPROVED
+"2x2 | PyTorch | Standard",-570.00,-1.82,+568.18,IMPROVED
+"2x2 | PyTorch | Zhang-style",-2071.81,-1368.02,+703.79,IMPROVED
+"2x2 | NumPy | Standard",-570.00,-350.26,+219.74,IMPROVED
+"2x2 | NumPy | Zhang-style",-2134.21,-1412.98,+721.23,IMPROVED
+"4x4 | PyTorch | Standard",-3776.72,-25.38,+3751.34,IMPROVED
+"4x4 | PyTorch | Zhang-style",-8419.91,-8642.13,-222.22,WORSE
+"4x4 | NumPy | Standard",-4205.04,-20.92,+4184.12,IMPROVED
+"4x4 | NumPy | Zhang-style",-8402.58,-9124.78,-722.20,WORSE

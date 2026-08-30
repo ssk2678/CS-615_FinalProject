@@ -1,0 +1,12 @@
+Step #0.00 (0ms ?*RT. ?UPS, TraCI: 6ms, vehicles TOT 0 ACT 0 BUF 0)                      
+/home/tnmfdrt/miniconda3/envs/cs615-sumo/lib/python3.11/site-packages/pettingzoo/utils/conversions.py:129: UserWarning: The base environment `sumo_rl_v0` does not have a `render_mode` defined.
+  warnings.warn(
+Initializing Visual Multi-Agent SUMO GUI Environment...
+ Retrying in 1 seconds
+ Retrying in 1 seconds
+💾 Successfully loaded and mapped all trained 4x4 MARL policy weights!
+
+▶ Press the green 'Play' button in the SUMO GUI window to start grid traffic flow...
+ Retrying in 1 seconds
+
+✔ Visual MARL evaluation finished cleanly! Total Evaluation Grid Reward: -25.38

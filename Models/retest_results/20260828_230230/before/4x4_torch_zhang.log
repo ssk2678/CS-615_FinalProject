@@ -1,0 +1,3 @@
+Step #0.00 (0ms ?*RT. ?UPS, TraCI: 7ms, vehicles TOT 0 ACT 0 BUF 0)                      
+/home/tnmfdrt/miniconda3/envs/cs615-sumo/lib/python3.11/site-packages/pettingzoo/utils/conversions.py:129: UserWarning: The base environment `sumo_rl_v0` does not have a `render_mode` defined.
+  warnings.warn(
